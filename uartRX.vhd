@@ -27,10 +27,10 @@ architecture Rx of UART_Rx is
 
     -- count baud
     signal ctr_baud : natural range (0 to TICKS-1) := 0;
-    signal s_sample : std_logic := '0';
+    signal sample : std_logic := '0';
 
     -- FSM initialisation
-    type state is (IDLE, START, RXING, STOP);
+    type state is (IDLE, START, RXING, STOP_s);
     signal s_state : state := IDLE;
 
     -- data signals
@@ -42,7 +42,7 @@ architecture Rx of UART_Rx is
 
 begin
     -- synchronize
-    process sync(clk) is
+    sync : process(clk) is
     begin
         if rising_edge(clk) then
             rx_sync <= rx_sync(0) & rx;
@@ -51,23 +51,78 @@ begin
     end sync;
 
     -- generate baud
-    process baud(clk, rst)
+    baud : process(clk, rst)
     begin
         if rst = '1' then
             ctr_baud <= 0;
-            s_sample <=  '0';
+            sample <=  '0';
         elsif rising_edge(clk) then
             if (ctr_baud = TICKS - 1) then
                 ctr_baud <= 0;
-                s_sample <= '1';
+                sample <= '1';
             else
                 ctr_baud <= ctr_baud + 1;
             end if;
         end if;
     end baud;
     
-            
 
-    end procedure;
+    -- FSM
+    fsmRX : process(clk, rst)
+    begin
+        if (rst = '1') then
+            state <= IDLE;
+            s_data <= (others => '0');
+            s_count <= 0;
+            s_data <= (others => '0');
+            s_d_valid <= '0';
+        elsif rising_edge(clk) then
+            s_d_valid <= '0';
+
+            case state is
+                when IDLE => 
+                    if rx_x = '0' then
+                        state <= START;
+                        ctr_baud <= 0;
+                    end if;
+                    
+
+                when START => 
+                    if sample = '1' then
+                        if rx_x = '0' then
+                            state <= RXING;
+                            s_count <= 0;
+                            s_data <=  (others => '0');
+                        else 
+                            state <= IDLE;
+                        end if;
+                    end if;
+                
+
+            when RXING => 
+                if sample = '1' then
+                    s_data <= rx_x & s_data(7 downto 1);
+                    if s_count = 7 then
+                        state <= STOP_s;
+                        data_reg  <= shift_reg;
+                    else
+                        bit_count <= bit_count + 1;
+                    end if;
+                end if;
+
+            when STOP_s =>
+                if sample = '1' then
+                    if rx_x = '1' then
+                        data_valid_i <= '1';
+                    end if;
+                    state <= IDLE;
+                end if;
+            end case;
+        end if;
+end fsmRX;
+
+-- Uitgangen
+data_out    <= data_reg;
+data_valid  <= s_d_valid;
 
 end architecture;
