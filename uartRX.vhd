@@ -122,7 +122,7 @@ begin
 end fsmRX;
 
 -- Uitgangen
-data_out    <= data_reg;
-data_valid  <= s_d_valid;
+d_out <= s_data;
+d_valid  <= s_d_valid;
 
 end architecture;
