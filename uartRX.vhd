@@ -53,11 +53,11 @@ begin
     -- generate baud
     process baud(clk, rst)
     begin
-        if rst = '1' then
+        if rst = '1' then -- reset 
             ctr_baud <= 0;
             s_sample <=  '0';
         elsif rising_edge(clk) then
-            if (ctr_baud = TICKS - 1) then
+            if (ctr_baud = TICKS - 1) then -- one UART period
                 ctr_baud <= 0;
                 s_sample <= '1';
             else
@@ -65,6 +65,7 @@ begin
             end if;
         end if;
     end baud;
+
     
             
 
