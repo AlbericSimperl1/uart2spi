@@ -26,8 +26,8 @@ architecture Rx of UART_Rx is
     signal rx_x : std_logic;
 
     -- count baud
-    signal s_ctr_baud : natural range (0 to TICKS-1) := 0;
-    signal s_tick : std_logic := '0';
+    signal ctr_baud : natural range (0 to TICKS-1) := 0;
+    signal s_sample : std_logic := '0';
 
     -- FSM initialisation
     type state is (IDLE, START, RXING, STOP);
@@ -50,6 +50,21 @@ begin
         end if;
     end sync;
 
+    -- generate baud
+    process baud(clk, rst)
+    begin
+        if rst = '1' then
+            ctr_baud <= 0;
+            s_sample <=  '0';
+        elsif rising_edge(clk) then
+            if (ctr_baud = TICKS - 1) then
+                ctr_baud <= 0;
+                s_sample <= '1';
+            else
+                ctr_baud <= ctr_baud + 1;
+            end if;
+        end if;
+    end baud;
     
             
 
