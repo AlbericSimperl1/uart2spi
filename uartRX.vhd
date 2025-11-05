@@ -48,8 +48,8 @@ begin
     sync : process(clk) is
     begin
         if rising_edge(clk) then
-            rx_sync <= rx_sync(0) & rx;
-            rx_x <= rx_sync(1);
+            rx_sync <= rx_sync(6 downto 0) & rx;
+            rx_x <= rx_sync(7);
         end if;
     end process;
 
