@@ -121,7 +121,7 @@ begin
             end if;
     end process;
 
--- Uitgangen
+-- out
 d_out <= s_data;
 d_valid  <= s_d_valid;
 
