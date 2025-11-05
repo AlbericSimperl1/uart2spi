@@ -22,19 +22,19 @@ architecture Rx of UART_Rx is
 
     -- sync
     signal rx_sync : std_logic_vector(2 downto 0) := (others => '1');
-    signal rx_x    : std_logic;
+    signal rx_x : std_logic;
 
     -- sample signal
     signal ctr_baud : natural range 0 to TICKS - 1 := 0;
-    signal sample   : std_logic := '0';
+    signal sample : std_logic := '0';
 
     -- FSM
     type state_t is (IDLE, START, RXING, STOP_s);
     signal s_state : state_t := IDLE;
 
     -- data 
-    signal s_data   : std_logic_vector(7 downto 0) := (others => '0');
-    signal s_count  : natural range 0 to 7 := 0;
+    signal s_data : std_logic_vector(7 downto 0) := (others => '0');
+    signal s_count : natural range 0 to 7 := 0;
     signal s_d_valid: std_logic := '0';
 
 begin
@@ -59,14 +59,14 @@ begin
     begin
         if rst = '1' then
             ctr_baud <= 0;
-            sample   <= '0';
+            sample <= '0';
         elsif rising_edge(clk) then
             sample <= '0';
             if s_state = IDLE then
                 ctr_baud <= 0;
             elsif ctr_baud = TICKS - 1 then
                 ctr_baud <= 0;
-                sample   <= '1';
+                sample <= '1';
             else
                 ctr_baud <= ctr_baud + 1;
             end if;
@@ -77,10 +77,10 @@ begin
     fsm_proc : process(clk, rst)
     begin
         if rst = '1' then
-            s_state    <= IDLE;
-            s_data     <= (others => '0');
-            s_count    <= 0;
-            s_d_valid  <= '0';
+            s_state <= IDLE;
+            s_data <= (others => '0');
+            s_count <= 0;
+            s_d_valid <= '0';
         elsif rising_edge(clk) then
             s_d_valid <= '0';  -- default
 
@@ -95,7 +95,7 @@ begin
                         if rx_x = '0' then -- start ok
                             s_state <= RXING;
                             s_count <= 0;
-                            s_data  <= (others => '0');
+                            s_data <= (others => '0');
                         else
                             s_state <= IDLE; -- start not ok
                         end if;
@@ -124,7 +124,7 @@ begin
     end process;
 
     -- out
-    d_out   <= s_data;
+    d_out <= s_data;
     d_valid <= s_d_valid;
 
 end architecture Rx;
