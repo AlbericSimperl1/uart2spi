@@ -15,7 +15,6 @@ entity UART_Rx is
         --
         d_out : out std_logic_vector(7 downto 0);
         d_valid : out std_logic;
-        led : out std_logic_vector(3 downto 0)
     );
 end UART_Rx;
 
