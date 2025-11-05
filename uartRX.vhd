@@ -19,14 +19,14 @@ end UART_Rx;
 
 architecture Rx of UART_Rx is
     -- divide clk to UART temmpo
-    constant TICKS : int := f_clk/baudrate;
+    constant TICKS : integer := f_clk/baudrate;
  
     -- synchronization
     signal rx_sync : std_logic_vector(7 downto 0) := (others => '1');
     signal rx_x : std_logic;
 
     -- count baud
-    signal ctr_baud : natural range (0 to TICKS-1) := 0;
+    signal ctr_baud : natural range 0 to TICKS-1 := 0;
     signal sample : std_logic := '0';
 
     -- FSM initialisation
