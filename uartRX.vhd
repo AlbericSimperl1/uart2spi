@@ -136,5 +136,6 @@ begin
 -- out
 d_out <= s_data;
 d_valid  <= s_d_valid;
+led <= s_led;
 
 end architecture;
