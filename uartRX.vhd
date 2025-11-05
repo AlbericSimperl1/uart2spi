@@ -12,8 +12,10 @@ entity UART_Rx is
         clk : in std_logic;
         rst : in std_logic;
         rx : in std_logic;
+        --
         d_out : out std_logic_vector(7 downto 0);
-        d_valid : out std_logic
+        d_valid : out std_logic;
+        led : out std_logic_vector(3 downto 0)
     );
 end UART_Rx;
 
@@ -39,6 +41,7 @@ architecture Rx of UART_Rx is
     --outputs
     signal s_data : std_logic_vector(7 downto 0) := (others => '0');
     signal s_d_valid : std_logic := '0';
+    signal s_led : std_logic_vector(4 downto 0) := (others => '0');
 
 begin
     -- synchronize
@@ -84,6 +87,8 @@ begin
                     if rx_x = '0' then
                         s_state <= START;
                         ctr_baud <= 0;
+                        s_led <= (others => '0');
+                        s_led(0) <= '1';
                     end if;
                     
 
@@ -93,6 +98,8 @@ begin
                             s_state <= RXING;
                             s_count <= 0;
                             s_data <=  (others => '0');
+                            s_led <= (others => '0');
+                            s_led(1) <= '1'; 
                         else 
                             s_state <= IDLE;
                         end if;
@@ -105,6 +112,9 @@ begin
                         if s_count = 7 then
                             s_state <= STOP_s;
                             s_data  <= s_shift;
+                            s_led <= (others => '0');
+                            s_led(2) <= '1'; 
+                        
                         else
                             ctr_baud <= ctr_baud + 1;
                         end if;
@@ -114,6 +124,8 @@ begin
                     if sample = '1' then
                         if rx_x = '1' then
                             s_d_valid <= '1';
+                            s_led <= (others => '0');
+                            s_led(3) <= '1'; 
                         end if;
                         s_state <= IDLE;
                     end if;
