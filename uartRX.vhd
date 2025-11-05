@@ -85,7 +85,7 @@ begin
                 when IDLE => 
                     if rx_x = '0' then
                         s_state <= START;
-                        ctr_baud <= 0;
+                        s_count <= 0;
                     end if;
                     
 
@@ -109,7 +109,7 @@ begin
                             s_data  <= s_shift;
                         
                         else
-                            ctr_baud <= ctr_baud + 1;
+                            s_count <= s_count + 1;
                         end if;
                     end if;
 
