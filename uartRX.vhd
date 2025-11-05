@@ -19,6 +19,7 @@ end UART_Rx;
 
 architecture Rx of UART_Rx is
     constant TICKS : integer := f_clk / baudrate;
+    constant HALF_TICKS : integer := TICKS / 2;
 
     -- sync
     signal rx_sync : std_logic_vector(2 downto 0) := (others => '1');
@@ -40,7 +41,6 @@ architecture Rx of UART_Rx is
 begin
 
     -- synchronize
-    --- no metastability
     sync_proc : process(clk)
     begin
         if rising_edge(clk) then
@@ -53,77 +53,76 @@ begin
         end if;
     end process;
 
-    -- baudrate generator
-    --- when to sample
-    baud_proc : process(clk, rst)
+    -- FSM and baud process
+    main_proc : process(clk)
     begin
-        if rst = '1' then
-            ctr_baud <= 0;
-            sample <= '0';
-        elsif rising_edge(clk) then
-            sample <= '0';
-            if s_state = IDLE then
+        if rising_edge(clk) then
+            if rst = '1' then
                 ctr_baud <= 0;
-            elsif ctr_baud = TICKS - 1 then
-                ctr_baud <= 0;
-                sample <= '1';
+                sample <= '0';
+                s_state <= IDLE;
+                s_data <= (others => '0');
+                s_count <= 0;
+                s_d_valid <= '0';
             else
-                ctr_baud <= ctr_baud + 1;
+                sample <= '0';
+                s_d_valid <= '0';
+
+                case s_state is
+                    when IDLE =>
+                        ctr_baud <= 0;
+                        if rx_x = '0' then -- start bit
+                            s_state <= START;
+                            ctr_baud <= HALF_TICKS;  -- center of the bit
+                        end if;
+
+                    when START =>
+                        if ctr_baud = TICKS - 1 then
+                            ctr_baud <= 0;
+                            sample <= '1';
+                            if rx_x = '0' then -- start bit ok
+                                s_state <= RXING;
+                                s_count <= 0;
+                                s_data <= (others => '0');
+                            else
+                                s_state <= IDLE;
+                            end if;
+                        else
+                            ctr_baud <= ctr_baud + 1;
+                        end if;
+
+                    when RXING =>
+                        if ctr_baud = TICKS - 1 then
+                            ctr_baud <= 0;
+                            sample <= '1';
+                            s_data <= rx_x & s_data(7 downto 1);
+                            if s_count = 7 then
+                                s_state <= STOP_s;
+                            else
+                                s_count <= s_count + 1;
+                            end if;
+                        else
+                            ctr_baud <= ctr_baud + 1;
+                        end if;
+
+                    when STOP_s =>
+                        if ctr_baud = TICKS - 1 then
+                            ctr_baud <= 0;
+                            sample <= '1';
+                            if rx_x = '1' then -- stop bit ok
+                                s_d_valid <= '1';
+                            end if;
+                            s_state <= IDLE;
+                        else
+                            ctr_baud <= ctr_baud + 1;
+                        end if;
+
+                end case;
             end if;
         end if;
     end process;
 
-    -- FSM
-    fsm_proc : process(clk, rst)
-    begin
-        if rst = '1' then
-            s_state <= IDLE;
-            s_data <= (others => '0');
-            s_count <= 0;
-            s_d_valid <= '0';
-        elsif rising_edge(clk) then
-            s_d_valid <= '0';  -- default
-
-            case s_state is
-                when IDLE =>
-                    if rx_x = '0' then -- valid start
-                        s_state <= START;
-                    end if;
-
-                when START =>
-                    if sample = '1' then
-                        if rx_x = '0' then -- start ok
-                            s_state <= RXING;
-                            s_count <= 0;
-                            s_data <= (others => '0');
-                        else
-                            s_state <= IDLE; -- start not ok
-                        end if;
-                    end if;
-
-                when RXING =>
-                    if sample = '1' then
-                        s_data <= rx_x & s_data(7 downto 1);
-                        if s_count = 7 then
-                            s_state <= STOP_s;
-                        else
-                            s_count <= s_count + 1;
-                        end if;
-                    end if;
-
-                when STOP_s =>
-                    if sample = '1' then
-                        if rx_x = '1' then -- valid stop
-                            s_d_valid <= '1';
-                        end if;
-                        s_state <= IDLE;
-                    end if;
-
-            end case;
-        end if;
-    end process;
-
-    -- out
+    -- output
     d_out <= s_data;
     d_valid <= s_d_valid;
 
