@@ -67,5 +67,58 @@ begin
         end if;
     end process;
 
- 
+    -- SPI fsm
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                state <= IDLE;
+                sr <= (others => '0');
+                bit_ctr <= 0;
+                s_busy <= '0';
+                s_cs <= '1';
+            else
+                case state is
+                    when IDLE =>
+                        busy <= '0';
+                        s_cs <= '1';
+                        bit_ctr <= 0;
+                        
+                        if data_valid = '1' then
+                            sr <= d_in;
+                            state <= LOAD;
+                            s_busy <= '1';
+                        end if;
+                    
+                    when LOAD =>
+                        s_cs <= '0';  -- activate chip select
+                        state <= TRANSMIT;
+                    
+                    when TRANSMIT =>
+                        if spi_clk_en = '1' then
+                            sr <= sr(6 downto 0) & '0';
+                            
+                            if bit_ctr = 7 then
+                                state <= FINISH;
+                            else
+                                bit_ctr <= bit_ctr + 1;
+                            end if;
+                        end if;
+                    
+                    when FINISH =>
+                        if clk_ctr = DIV - 1 then
+                            s_cs <= '1';  -- Deactivate chip select
+                            s_busy <= '0';
+                            state <= IDLE;
+                        end if;
+                end case;
+            end if;
+        end if;
+    end process;
+
+    spi_mosi <= sr(7);
+    spi_clk <= s_spi_clk;
+    cs <= s_cs;
+    busy <= s_busy;
+    
 end architecture;
