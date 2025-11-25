@@ -35,13 +35,37 @@ architecture rtl of SPI_Tx is
     -- reg
     signal sr : std_logic_vector(7 downto 0) := (others => '0');
     
-    signal bit_count : integer range 0 to 7 := 0;
+    signal bit_ctr : integer range 0 to 7 := 0;
     signal s_busy : std_logic := '0';
     signal s_cs: std_logic := '1';
 begin
 
-    
+    -- spi clk generator
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                clk_ctr <= 0;
+                s_spi_clk <= '0';
+                spi_en <= '0';
+            else
+                spi_en <= '0';
 
+                if (state = IDLE) then
+                    clk_ctr <= 0;
+                    s_spi_clk <= '0';
+                elsif state = TRANSMIT then
+                    if clk_ctr = (DIV - 1) then
+                        clk_ctr = 0;
+                        s_spi_clk <= not s_spi_clk;
+                        spi_en <=  not s_spi_clk;
+                    else
+                        clk_ctr <= clk_ctr + 1;
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process;
 
-
+ 
 end architecture;
