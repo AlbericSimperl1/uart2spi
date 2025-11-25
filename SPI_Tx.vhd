@@ -115,5 +115,10 @@ begin
             end if;
         end if;
     end process;
+
+    spi_mosi <= sr(7);
+    spi_clk <= s_spi_clk;
+    cs <= s_cs;
+    busy <= s_busy;
     
 end architecture;
