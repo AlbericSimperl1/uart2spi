@@ -6,7 +6,7 @@ entity SPI_Tx is
     generic(
         f_clk : integer := 100_000_000; -- 100 MHz
         spi_f_clk : integer := 8_000_000 -- 8MHZ
-    )
+    );
     
     port (
         -- standard
@@ -19,7 +19,7 @@ entity SPI_Tx is
         busy : out std_logic; -- busy transmitting to handler
         clk_spi : out std_logic;
         spi_mosi : out std_logic; -- master out slave in 
-        spi_CS : out std_logic; -- chip select
+        cs : out std_logic -- chip select
     );
 end SPI_Tx;
 
@@ -29,7 +29,7 @@ architecture rtl of SPI_Tx is
     type state_t is (IDLE, LOAD, TRANSMIT, FINISH);
     signal state : state_t := IDLE; 
     -- clk generator
-    signal clk_ctr : integer range 0 to CLKDIV - 1 := 0;
+    signal clk_ctr : integer range 0 to DIV - 1 := 0;
     signal spi_en : std_logic := '0';
     signal s_spi_clk : std_logic := '0'; -- internal
     -- reg
@@ -55,8 +55,8 @@ begin
                     clk_ctr <= 0;
                     s_spi_clk <= '0';
                 elsif state = TRANSMIT then
-                    if clk_ctr = (DIV - 1) then
-                        clk_ctr = 0;
+                    if clk_ctr = DIV - 1 then
+                        clk_ctr <= 0;
                         s_spi_clk <= not s_spi_clk;
                         spi_en <=  not s_spi_clk;
                     else
@@ -84,7 +84,7 @@ begin
                         s_cs <= '1';
                         bit_ctr <= 0;
                         
-                        if data_valid = '1' then
+                        if d_valid = '1' then
                             sr <= d_in;
                             state <= LOAD;
                             s_busy <= '1';
@@ -95,7 +95,7 @@ begin
                         state <= TRANSMIT;
                     
                     when TRANSMIT =>
-                        if spi_clk_en = '1' then
+                        if spi_en = '1' then
                             sr <= sr(6 downto 0) & '0';
                             
                             if bit_ctr = 7 then
@@ -107,7 +107,7 @@ begin
                     
                     when FINISH =>
                         if clk_ctr = DIV - 1 then
-                            s_cs <= '1';  -- Deactivate chip select
+                            s_cs <= '1';  -- deactivate chip select
                             s_busy <= '0';
                             state <= IDLE;
                         end if;
@@ -117,8 +117,7 @@ begin
     end process;
 
     spi_mosi <= sr(7);
-    spi_clk <= s_spi_clk;
+    clk_spi <= s_spi_clk;
     cs <= s_cs;
     busy <= s_busy;
-    -- omg please
 end architecture;
